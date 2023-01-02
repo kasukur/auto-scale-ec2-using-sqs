@@ -507,4 +507,4 @@ See you next time 👋
 
 ### Referrals
 
-- [Scaling based on Amazon SQS] (https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-using-sqs-queue.html)
+- [Scaling based on Amazon SQS](https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-using-sqs-queue.html)
