@@ -1,3 +1,5 @@
+# Auto Scale EC2 using SQS
+
 ## Table of Contents
 
 1. [Introduction](#Intro)
