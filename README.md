@@ -412,10 +412,10 @@ nohup ./receiveMessages.sh &
 Since we have populated the queue with 2000 messages and have an auto scaling group launch a maximum of 4 instances.
 We will be verifying it using Cloud Watch Alarms and Auto Scaling group's Activity.
 
-1. Navigate to CloudWatch > Alarms > ScaleOut, the state of ScaleOut ALarm status will be `In alarm` and the ScaleIn ALarm status will be `OK`.
+1. Navigate to CloudWatch > Alarms > ScaleOut, the state of ScaleOut Alarm status will be `In alarm` and the ScaleIn Alarm status will be `OK`.
 2. After a period of 10 mins or so, you will notice 4 EC2 instances launched under EC2 > Auto Scaling groups > ASG-SQS > Activity.
 3. Monitor the messages in `MyMessages` queue, the number of messages will be reducing as they are processed by the EC2 instances.
-4. Navigate to CloudWatch > Alarms > ScaleIn, the state of ScaleIn ALarm status will be `In alarm` and the ScaleOut ALarm status will be `OK`.
+4. Navigate to CloudWatch > Alarms > ScaleIn, the state of ScaleIn Alarm status will be `In alarm` and the ScaleOut Alarm status will be `OK`.
 5. You will notice 3 EC2 instances terminated under EC2 > Auto Scaling groups > ASG-SQS > Activity.
 
 #### How to verify that the SQS messages are being processed?
