@@ -1,13 +1,11 @@
-# Auto Scale EC2 using SQS
-
 ## Table of Contents
 
 1. [Introduction](#Intro)
 2. [Create an EC2 Instance Role](#Role)
 3. [Create a Key pair](#KP)
 4. [Create a Security Group](#SG)
-5. [Create a S3 Bucket](#S3)
-6. [Create a SQS queue](#sqs)
+5. [Create an S3 Bucket](#S3)
+6. [Create an SQS queue](#sqs)
 7. [Create a Cloud9 instance](#cloud9)
 8. [Create CloudWatch Alarms](#cw)
 7. [Create a Launch Template](#template)
@@ -23,10 +21,10 @@
 
 In this blog we are going to set up auto scaling of EC2 instances using the SQS ApproximateNumberOfMessagesVisible metric.
 
-AWS Auto Scaling monitors your applications and automatically adjusts capacity to maintain steady, predictable performance at the lowest possible cost. Using AWS Auto Scaling, it’s easy to setup application scaling for multiple resources across multiple services in minutes.
+AWS Auto Scaling monitors your applications and automatically adjusts capacity to maintain steady, predictable performance at the lowest possible cost. Using AWS Auto Scaling, it’s easy to set up application scaling for multiple resources across multiple services in minutes.
 
 #### Benefits
-- Setup Scaling quickly.
+- Set up Scaling quickly.
 - Make SMART scaling decisions.
 - Automatically maintain performance.
 - Pay only for what you need.
@@ -41,65 +39,66 @@ Let's get started with the demo.
 
 #### Step 1. Create an EC2 Instance Role
 
-1. Navigate to IAM > Roles > Click on **Create role**
-2. Select **EC2** under Common use case and Click **Next**
-3. Select **AmazonS3ReadOnlyAccess** and **AmazonSQSFullAccess** and Click **Next**
-   > Note: you may create a custom policy for SQS with the required permissions instead of using a managed policy **AmazonSQSFullAccess** to provide the least amount of privileges.
-4. Enter Role name as **EC2InstanceRoleForSQS** and Click **Create role**
+1. Navigate to IAM > Roles > Click on **Create role**.
+2. Select **EC2** under Common use case and Click **Next**.
+3. Select **AmazonS3ReadOnlyAccess** and **AmazonSQSFullAccess** and Click **Next**.
+4. Enter Role name as **EC2InstanceRoleForSQS** and Click **Create role**.
 
-    _AmazonSQSFullAccess_
+> Note: you may create a custom policy for SQS with the required permissions instead of using the managed policy **AmazonSQSFullAccess** to provide the least amount of privileges.
 
-    ```json
+_AmazonSQSFullAccess_
+
+```json
+{
+"Version": "2012-10-17",
+"Statement": [
     {
+        "Action": [
+            "sqs:*"
+        ],
+        "Effect": "Allow",
+        "Resource": "*"
+    }
+]
+}
+```
+
+_AmazonS3ReadOnlyAccess_
+
+```json
+{
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Action": [
-                "sqs:*"
-            ],
             "Effect": "Allow",
+            "Action": [
+                "s3:Get*",
+                "s3:List*",
+                "s3-object-lambda:Get*",
+                "s3-object-lambda:List*"
+            ],
             "Resource": "*"
         }
     ]
-    }
-    ```
+}
+```
 
-    _AmazonSQSFullAccess_
+_Trusted entities_
 
-    ```json
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "s3:Get*",
-                    "s3:List*",
-                    "s3-object-lambda:Get*",
-                    "s3-object-lambda:List*"
-                ],
-                "Resource": "*"
-            }
-        ]
-    }
-    ```
-
-    _Trusted entities_
-
-    ```json
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Principal": {
-                    "Service": "ec2.amazonaws.com"
-                },
-                "Action": "sts:AssumeRole"
-            }
-        ]
-    }
-    ```
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ec2.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+```
 
 ---
 
@@ -108,7 +107,7 @@ Let's get started with the demo.
 #### Step 2. Create a key pair
 
 1. Navigate to EC2 > Key Pairs (under Network & Security).
-2. Click `Create key pair`.
+2. Click **Create key pair**.
 3. Enter Name as `auto-scale`.
 4. Navigate to the folder where the key pair is downloaded and run.
    
@@ -129,6 +128,7 @@ Let's get started with the demo.
 2. Navigate to EC2 > Security Groups > Create a new security group for your ALB, and set the following values:
    * Name: `MyIPSSH-SG`.
    * Add an Inbound rule to allow `SSH (TCP 22)` traffic from `My IP`.
+3. Click **Create security group**.
 
 ![MyIPSSH-SG](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/br62zaedgkg28yx8u12g.png)
 > MyIPSSH-SG
@@ -137,9 +137,9 @@ Let's get started with the demo.
 
 <a name="S3"></a>
 
-#### Step 4. Create a S3 Bucket
+#### Step 4. Create an S3 Bucket
 1. Navigate to EC2 > Click **Create Bucket**
-2. Enter Bucket name as `autoscalescripts`, probably add some random numbers to make the bucket name unique.
+2. Enter the Bucket name as `autoscalescripts`, add some random numbers to make the bucket name unique.
 3. Leave the rest of the settings as default and click **Create Bucket**
 4. Download `sendMessages.sh` and `receiveMessages.sh` from the [github](https://github.com/kasukur/auto-scale-ec2-using-sqs) and upload them to the S3 bucket.
 
@@ -147,7 +147,7 @@ Let's get started with the demo.
 
 <a name="sqs"></a>
 
-### Step 5. Create a SQS queue
+### Step 5. Create an SQS queue
 
 1. Navigate to **Simple Queue Service** and click **Create queue**
 2. Enter **Name** as `MyMessages`, leave the rest as defaults and click **Create queue**
@@ -175,7 +175,7 @@ Let's get started with the demo.
 2. Enter **Name** as `awscli` and click **Create**.
 3. Click **Open** under **AWS Cloud9** > **Environments**.
 4. When Cloud9 is ready, Click File > Upload Local Files... and then upload `sendMessages.sh`.
-5. Let's check aws cli version.
+5. Let's check the AWS CLI version.
 
     ```bash
     Sri:~/environment $ aws --version
@@ -195,20 +195,21 @@ Let's get started with the demo.
 
 ### Step 7. Create CloudWatch Alarms
 
-We are going to create a ScaleOut Alarm to launch new instances when the **ApproximateNumberOfMessagesVisible** are greater than **500**.
+We are going to create a ScaleOut Alarm to launch new instances when the **ApproximateNumberOfMessagesVisible** is greater than **500**.
 
 1. Navigate to CloudWatch > Alarms > Click **Create alarm**.
-2. Click **Select Metric**, search for **SQS**, select **SQS > Queue Metrics**, Select **MyMessages > ApproximateNumberOfMessagesVisible** and Click **Select Metric**.
-3. Change **Statistic** to **Sum**, **Period** to **1 minute**.
+2. Click **Select Metric**, search for **SQS**, select **SQS > Queue Metrics**.
+3. Select **MyMessages > ApproximateNumberOfMessagesVisible** and Click **Select Metric**.
+4. Change **Statistic** to **Sum**, **Period** to **1 minute**.
     - Threshold type: **Static**.
     - Whenever ApproximateNumberOfMessagesVisible is...: **Greater**.
     - Define the threshold value: **500**.
-4. Click **Next**.
-5. Click **Remove** under **Notification** and Click **Next**.
-6. Enter Alarm name as **ScaleOut** and Click **Next**.
-7. Click **Create Alarm**.
+5. Click **Next**.
+6. Click **Remove** under **Notification** and Click **Next**.
+7. Enter Alarm name as **ScaleOut** and Click **Next**.
+8. Click **Create Alarm**.
 
-Similar to ScaleOut, we also need to create a ScaleIn Alarm to launch new instances when the **ApproximateNumberOfMessagesVisible** are lesser than **300**.
+Similar to ScaleOut, we also need to create a ScaleIn Alarm to launch new instances when the **ApproximateNumberOfMessagesVisible** is lesser than **300**.
 
 1. Select **ScaleOut** from CloudWatch > Alarms, Click on **Actions** and **Copy**.
 2. Change the following:
@@ -219,8 +220,8 @@ Similar to ScaleOut, we also need to create a ScaleIn Alarm to launch new instan
 6. Enter Alarm name as **ScaleIn** and Click **Next**.
 7. Click **Create Alarm**.
 
-👉 It is important to not to have the same value for scale-in and scale-out thresholds. we you should leave a gap between them to prevent oscillation.
-For example: let's say you have 3 instances, and the CPU goes to 60%, triggering the +1 step scaling policy. If the load stays constant, it will now be distributed to all 4 instances and the average CPU will drop to around 45% and the scale-in alarm will go off. This will then keep happening in a loop until the load goes up or down enough for one of the alarms to stay in the alarm state and the ASG reaches the min or max.
+👉 It is important to not have the same value for scale-in and scale-out thresholds. We should leave a gap between them to prevent oscillation.
+For example: let's say we have 3 instances, and the CPU goes to 60%, which triggers the +1 step scaling policy. If the load stays constant, it will now be distributed to all 4 instances and the average CPU will drop to around 45% and the scale-in alarm will go off. This will then keep happening in a loop until the load goes up or down sufficiently for one of the alarms to stay in the alarm state and the ASG to reache the min or max.
 
 
 ![ScaleOut_CreateAlarm1](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/3pt9c5atzk7rk9yg9bbo.png)
@@ -269,22 +270,21 @@ For example: let's say you have 3 instances, and the CPU goes to 60%, triggering
 
 ### Step 8. Create a Launch Template
 
-We can use Launch template or Launch Configurations. Launch Template are preferred over Launch Configurations as we can have different versions of the template. Also we can't modify a launch configuration after we have created it.
+We can use a Launch Template or Launch Configurations. Launch Template is preferred over Launch Configurations as we can have different versions of the template. Also we can't modify a Launch Configuration after we have created it.
 
-Create a launch template that will be used by the Auto Scaling group. The launch template defines what the instances are and how they are created.
+Create a Launch Template that will be used by the Auto Scaling group. The Launch Template defines what the instances are and how they are created.
 
 1. Navigate to EC2 > Instances > Launch Templates.
-2. Create a new template, and call it `AutoScale-SQS` for the name.
-3. Select `Provide guidance to help me set up a template that I can use with EC2 Auto Scaling`
-4. Search for `AMI`, and pick the `Amazon Linux`.
-5. Set the instance type as `t2.micro`.
-6. Select `key pair` you created earlier.
-8. Select the `MyIPSSH-SG` security group you created earlier.
-9. Expand Advanced Details, and select `EC2InstanceRoleForSQS` Role under **IAM instance profile**.
-10. Paste the following script under **User data**.
-    * Note: These are commands to install jq, aws cli, copy scripts from S3 bucket and executes receiveMessages.sh.
-10. Click Create Launch Template.
-11. Click **View Launch templates**.
+2. Create a new template, and name it `AutoScale-SQS`.
+3. Search for `AMI`, and pick the `Amazon Linux`.
+4. Set the instance type as `t2.micro`.
+5. Select `key pair` you created earlier.
+6. Select the `MyIPSSH-SG` security group you created earlier.
+7. Expand Advanced Details, and select `EC2InstanceRoleForSQS` Role under **IAM instance profile**.
+8. Paste the following script under **User data**.
+    * Note: These are commands to install jq, AWS CLI, copy scripts from the S3 bucket and to execute receiveMessages.sh.
+9. Click Create Launch Template.
+10. Click **View Launch templates**.
 
 **User data**
 
@@ -309,7 +309,7 @@ sudo chmod +x /home/ec2-user/*.sh
 nohup ./receiveMessages.sh &
 ```
 
-👉 Launch templates with User data are slow, it is recommended to create an AMI with the required software to improve the speed of instance initialisation.
+👉 As Launch Templates with User data are slow, it is recommended to create an AMI with the required software to improve the speed of instance initialisation.
 
 ![LaunchTemplate1](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/7xbrn9ucrk4ppmti5prl.png)
 > LaunchTemplate1
@@ -362,7 +362,7 @@ nohup ./receiveMessages.sh &
     * Take the action: `Remove` with `1` capacity units
     * And then wait `120` seconds before allowing another scaling activity
 
-👉 The best practice is to scale up fast and scale down slow. Hence we used 60 seconds to scale out and 120 seconds to scale in.
+👉 It is best practice to scale up fast and scale down slow. Hence we used 60 seconds to scale out and 120 seconds to scale in.
 
 ![ASG1](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/rkzh595bvg4q44v9x4c3.png)
 > ASG1
@@ -409,24 +409,23 @@ nohup ./receiveMessages.sh &
 
 ### Step 10. Verification and Monitoring
 
-Since we have populated the queue with 2000 messages and have an auto scaling group launch a maximum of 4 instances.
-We will be verifying it using Cloud Watch Alarms and Auto Scaling group's Activity.
+We have populated the queue with 2000 messages and have an auto scaling group launch with a maximum of 4 instances. We will now be verifying it using Cloud Watch Alarms and Auto Scaling group's Activity.
 
 1. Navigate to CloudWatch > Alarms > ScaleOut, the state of ScaleOut Alarm status will be `In alarm` and the ScaleIn Alarm status will be `OK`.
 2. After a period of 10 mins or so, you will notice 4 EC2 instances launched under EC2 > Auto Scaling groups > ASG-SQS > Activity.
-3. Monitor the messages in `MyMessages` queue, the number of messages will be reducing as they are processed by the EC2 instances.
+3. Monitor the messages in `MyMessages` queue, the number of messages will reduce as they are processed by the EC2 instances.
 4. Navigate to CloudWatch > Alarms > ScaleIn, the state of ScaleIn Alarm status will be `In alarm` and the ScaleOut Alarm status will be `OK`.
-5. You will notice 3 EC2 instances terminated under EC2 > Auto Scaling groups > ASG-SQS > Activity.
+5. You will notice 3 EC2 instances terminated under EC2 > Auto Scaling groups > ASG-SQS > Activity when the messages are less than **300**.
 
-#### How to verify that the SQS messages are being processed?
+#### How to verify that the SQS messages are being processed
 
-Logon to the EC2 Instance and then switch to the root user.
+Log on to the EC2 Instance and then switch to the root user.
 
 ```bash
 [ec2-user@ip-172-31-47-21 ~]$ sudo su -
 ```
 
-Execute the following command, which will show the log file.
+Execute the following command, which will show the log file name.
 
 ```bash
 ps xf
@@ -464,7 +463,7 @@ Sleep for 1 second...
 
 ---
 
-👉 Auto Scaling Group Tip: When you do not want to have instances running or for Disaster Recovery purposes or to save costs, you may set the following to **Zero**.
+👉 Auto Scaling Group Tip: When you do not want to have instances running or for Disaster Recovery purposes or to save costs, you may set the following inputs to **Zero**.
 - Desired Capacity: `0`
 - Minimum Capacity: `0`
 - Maximum Capacity: `0`
@@ -493,11 +492,13 @@ Sleep for 1 second...
 
 ### Summary
 
-👉 It is important to not to have the same value for scale-in and scale-out thresholds. we you should leave a gap between them to prevent oscillation.
+👉 It is important to not have the same value for scale-in and scale-out thresholds. We should leave a gap between them to prevent oscillation.
 
 👉 The best practice is to scale up fast, and scale down slow.
 
 👉 Launching an EC2 instance might be slow if we have to install software, configure..etc during the scale out. One way to speed up the process is by creating an AMI with all the required software and then use that AMI in the Launch template.
+
+Hope you learnt something new from the above demo.
 
 See you next time 👋
 
