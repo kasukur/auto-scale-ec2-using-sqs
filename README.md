@@ -494,7 +494,9 @@ Sleep for 1 second...
 ### Summary
 
 👉 It is important to not to have the same value for scale-in and scale-out thresholds. we you should leave a gap between them to prevent oscillation.
+
 👉 The best practice is to scale up fast, and scale down slow.
+
 👉 Launching an EC2 instance might be slow if we have to install software, configure..etc during the scale out. One way to speed up the process is by creating an AMI with all the required software and then use that AMI in the Launch template.
 
 See you next time 👋
